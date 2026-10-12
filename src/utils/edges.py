@@ -1,10 +1,12 @@
 from dotenv import load_dotenv
-from src.utils.states import GenerateAnalystState
+from src.utils.states import GenerateAnalystState, InterviewState
 from typing import Literal
 from langgraph.graph import END
+from langchain.messages import AIMessage
+
 load_dotenv()
 
-# coditional edges  -> define where to go after feedback 
+# conditional edges  -> define where to go after feedback 
 def should_continue(state: GenerateAnalystState) -> Literal["create_analysts", END]:
     """Return the next node to execute"""
 
@@ -13,4 +15,21 @@ def should_continue(state: GenerateAnalystState) -> Literal["create_analysts", E
         return "create_analysts"
 
     return END
+
+def routes_messages(state: InterviewState, name: str="expert"):
+    """Route between question and answer """
+
+    #get message 
+    messages = state["messages"]
+    max_num_turns = state.get('max_num_turs',2)
+
+    #check the num of expert answers
+    num_responses = len([m for m in messages if isinstance (m, AIMessage) and m.name == name])
+
+    if num_responses >= max_num_turns:
+        return "save_interview" # move to next node 
+
+    return "ask_question"  # loop
+
+
 
